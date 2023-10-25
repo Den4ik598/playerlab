@@ -1,4 +1,3 @@
-# Импортируем необходимые модули и библиотеки
 from PyQt5.QtCore import Qt, QUrl, QTime
 from qt_material import apply_stylesheet
 from PyQt5.QtMultimedia import QMediaContent, QMediaPlayer
@@ -151,7 +150,7 @@ class Videoplayer(QMainWindow):
 
     def openfile(self):
         # Открытие файла и настройка видеоплеера
-        fileName, _ = QFileDialog.getOpenFileName(self, "Выберите видеофайл",  "", "Все файлы (*);;Видеофайл (*.mp4 *.avi *.wmv *.mov *.mkv *.3gp, *flv, *ogv, *webm)")
+        fileName, _ = QFileDialog.getOpenFileName(self, "Выберите видеофайл",  "", "Все файлы (*);;Видеофайл (*.mp4 *.avi *.wmv *.mov *.mkv *.3gp, *flv, *ogv, *webm ,*.mp3 *.wav *.ogg *.flac)")
         if fileName != '':
             self.mediaPlayer.setMedia(QMediaContent(QUrl.fromUserInput(fileName)))
             self.playButton.setEnabled(True)
@@ -352,6 +351,19 @@ class Videoplayer(QMainWindow):
         self.playButton.setEnabled(False)
         self.errorLabel.setText("Ошибка: " + self.mediaPlayer.errorString())
 
+    def wheelEvent(self, event):
+        # обработка колесика мыши для регулировки громкости 
+        volume = self.volumeSlider.value()
+        if event.angleDelta().y() > 0:
+            # увеличение громкости
+            if volume < 100:
+                volume += 5
+                self.volumeSlider.setValue(volume)
+        else:
+            # уменьшение громкости
+            if volume > 0:
+                volume -= 5
+                self.volumeSlider.setValue(volume)
 
 if __name__ == '__main__':
     # Создание и запуск приложения
