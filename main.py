@@ -1,3 +1,4 @@
+from PyQt5.QtGui import QPixmap
 from PyQt5.QtCore import Qt, QUrl, QTime
 from qt_material import apply_stylesheet
 from PyQt5.QtMultimedia import QMediaContent, QMediaPlayer
@@ -5,24 +6,24 @@ from PyQt5.QtMultimediaWidgets import QVideoWidget
 from PyQt5.QtWidgets import QApplication, QFileDialog, QMainWindow, QHBoxLayout, QLabel, QPushButton, QSizePolicy, QSlider, QStyle, QVBoxLayout, QWidget, QAction, QComboBox
 from PyQt5.QtGui import QIcon, QMouseEvent, QPixmap
 import sys, os
-
+ 
 # Класс MainWindow для видеоплеера
 class Videoplayer(QMainWindow):
     def __init__(self, parent=None):
         super(Videoplayer, self).__init__(parent)
-        
+ 
         # Установка размеров окна и иконки
         self.setMinimumSize(800, 600)
         self.windowStateBeforeFullScreen = None
         self.setWindowIcon(QIcon('icons/app.png'))
-
+ 
         # Создание плеера и виджета видео
         self.mediaPlayer = QMediaPlayer(None, QMediaPlayer.VideoSurface)
         videoWidget = QVideoWidget()
         videoWidget.setMouseTracking(True)
         videoarea = QWidget(self)
         self.setCentralWidget(videoarea)
-
+ 
         # Создание кнопок и элементов управления
         self.playButton = QPushButton()
         self.playButton.setEnabled(False)
@@ -74,9 +75,13 @@ class Videoplayer(QMainWindow):
         self.forwardButton.setIcon(self.style().standardIcon(QStyle.SP_MediaSeekForward))
         self.forwardButton.setEnabled(False)
         self.forwardButton.clicked.connect(self.forward)
+        self.screenshotButton = QPushButton()
+        self.screenshotButton.setIcon(self.style().standardIcon(QStyle.SP_FileIcon))
+        self.screenshotButton.setEnabled(False)
+        self.screenshotButton.clicked.connect(self.createScreenshot)
         self.errorLabel = QLabel()
         self.errorLabel.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Maximum)
-
+ 
         # создание "горячих" клавиш 
         openAction = QAction(QIcon('icons/open_file.png'), 'Открыть файл', self)
         openAction.setShortcut('Ctrl+O')
@@ -102,7 +107,7 @@ class Videoplayer(QMainWindow):
         forwardAction = QAction(QIcon('icons/forward.png'), 'Вперед', self)
         forwardAction.setShortcut('Right')
         forwardAction.triggered.connect(self.forward)
-
+ 
         #создание верхнего меню - бара 
         menuBar = self.menuBar()
         fileMenu = menuBar.addMenu('Медиа')
@@ -119,12 +124,13 @@ class Videoplayer(QMainWindow):
         Audiomenu.addAction(decreaseVolumeAction)
         VideoMenu=menuBar.addMenu('Видео')
         VideoMenu.addAction(self.fullscreenAction)
-
+ 
         #подключение кнопок и других графических элементов
         controlLayout = QHBoxLayout()
         controlLayout.setContentsMargins(0, 0, 0, 0)
         controlLayout.addWidget(self.playButton)
         controlLayout.addWidget(self.stopbutton)
+        controlLayout.addWidget(self.pausebutton)
         controlLayout.addWidget(self.currentTimeLabel)
         controlLayout.addWidget(self.timeSeparatorLabel)
         controlLayout.addWidget(self.totalTimeLabel)
@@ -135,19 +141,20 @@ class Videoplayer(QMainWindow):
         controlLayout.addWidget(self.speedComboBox)
         controlLayout.addWidget(self.backwardButton)
         controlLayout.addWidget(self.forwardButton)
+        controlLayout.addWidget(self.screenshotButton)
         layout = QVBoxLayout()
         layout.addWidget(videoWidget)
         layout.addLayout(controlLayout)
         layout.addWidget(self.errorLabel)
         videoarea.setLayout(layout)
-
+ 
         # Подключение сигналов к слотам для обработки событий
         self.mediaPlayer.setVideoOutput(videoWidget)
         self.mediaPlayer.stateChanged.connect(self.mediaStateChanged)
         self.mediaPlayer.positionChanged.connect(self.positionChanged)
         self.mediaPlayer.durationChanged.connect(self.durationChanged)
         self.mediaPlayer.error.connect(self.detectionError)
-
+ 
     def openfile(self):
         # Открытие файла и настройка видеоплеера
         fileName, _ = QFileDialog.getOpenFileName(self, "Выберите видеофайл",  "", "Все файлы (*);;Видеофайл (*.mp4 *.avi *.wmv *.mov *.mkv *.3gp, *flv, *ogv, *webm ,*.mp3 *.wav *.ogg *.flac)")
@@ -156,6 +163,7 @@ class Videoplayer(QMainWindow):
             self.playButton.setEnabled(True)
             self.stopbutton.setEnabled(True)
             self.pausebutton.setEnabled(True)
+            self.screenshotButton.setEnabled(True)
             self.positionSlider.setEnabled(True)
             self.currentTimeLabel.setVisible(True)
             self.timeSeparatorLabel.setVisible(True)
@@ -166,83 +174,85 @@ class Videoplayer(QMainWindow):
             self.errorLabel.clear()
         else:
             self.detectionError()
-
+ 
     def exit(self):
         # Завершение приложения
         sys.exit(app.exec_())
-
+ 
     def play(self):
         # Воспроизведение или пауза видео
         if self.mediaPlayer.state() == QMediaPlayer.PlayingState:
            self.mediaPlayer.pause()
         else:
             self.mediaPlayer.play()
-
+ 
     def pause(self):
         # Пауза видео
         self.mediaPlayer.pause()
-
+ 
     def togglePlayPause(self): 
         #Кнопка пауза и воспроизвести
         if self.mediaPlayer.state() == QMediaPlayer.PlayingState:
             self.mediaPlayer.pause()
         else:
             self.mediaPlayer.play()
-
+ 
     def stop(self):
         # Остановка видео
         self.mediaPlayer.stop()
-
+ 
     def mediaStateChanged(self, state):
         # Обработка изменения состояния видеоплеера (воспроизведение, пауза и др.)
         if self.mediaPlayer.state() == QMediaPlayer.PlayingState:
             self.playButton.setIcon(self.style().standardIcon(QStyle.SP_MediaPause))
+            self.pausebutton.setEnabled(True)
             self.backwardButton.setEnabled(True)
             self.forwardButton.setEnabled(True)
         else:
             self.playButton.setIcon(self.style().standardIcon(QStyle.SP_MediaPlay))
+            self.pausebutton.setEnabled(True)
             self.backwardButton.setEnabled(True)
             self.forwardButton.setEnabled(True)
-
+ 
         playbackRate = self.mediaPlayer.playbackRate()
         speedText = f"{playbackRate}x"
         index = self.speedComboBox.findText(speedText)
         if index != -1:
             self.speedComboBox.setCurrentIndex(index)
-
+ 
     def positionChanged(self, position):
         # Обработка изменения позиции воспроизведения
         self.positionSlider.setValue(position)
         self.currentTimeLabel.setText(self.formatTime(position))
-
+ 
     def durationChanged(self, duration):
         # Обработка изменения продолжительности видео
         self.positionSlider.setRange(0, duration)
         self.totalTimeLabel.setText(self.formatTime(duration))
-
+ 
     def formatTime(self, milliseconds):
         # Форматирование времени в удобный для отображения вид
         duration = QTime(0, 0, 0, 0).addMSecs(milliseconds)
         return duration.toString('hh:mm:ss')
-
+ 
     def setPosition(self, position):
         # Установка позиции воспроизведения
         self.mediaPlayer.setPosition(position)
-
+ 
     def unmute(self):
         # Включение звука
         self.mediaPlayer.setMuted(False)
         if self.volumeSlider.value() == 0:
             self.volumeSlider.setValue(self.previousVolume)
         self.updateVolumeImage()
-
+ 
     def mute(self):
         # Отключение звука
         self.mediaPlayer.setMuted(True)
         self.previousVolume = self.volumeSlider.value()
         self.volumeSlider.setValue(0)
         self.updateVolumeImage()
-
+ 
     def toggleMute(self):
         # Переключение звука
         if self.mediaPlayer.isMuted():
@@ -255,11 +265,11 @@ class Videoplayer(QMainWindow):
             self.previousVolume = self.volumeSlider.value()
             self.volumeSlider.setValue(0)
             self.updateVolumeImage()
-
+ 
     def setVolume(self, volume):
         # установка громкости 
         self.mediaPlayer.setVolume(volume)
-
+ 
     def updateVolume(self):
         # обновление громкости
         volume = self.volumeSlider.value()
@@ -269,7 +279,7 @@ class Videoplayer(QMainWindow):
             self.mediaPlayer.setMuted(False)
             self.mediaPlayer.setVolume(volume)
         self.updateVolumeImage()
-
+ 
     def updateVolumeImage(self):
         # обновление громкости звука в видео, которое вы запустили 
         volume = self.volumeSlider.value()
@@ -280,21 +290,21 @@ class Videoplayer(QMainWindow):
         else:
             image = QPixmap('icons/volume_up.png').scaled(35, 35)
         self.volumeImageLabel.setPixmap(image)
-
+ 
     def increaseVolume(self):
         #увеличение громкости 
         volume = self.volumeSlider.value()
         if volume < 100:
             volume += 5
             self.volumeSlider.setValue(volume)
-
+ 
     def decreaseVolume(self):
         # Уменьшение громкости
         volume = self.volumeSlider.value()
         if volume > 0:
             volume -= 5
             self.volumeSlider.setValue(volume)
-
+ 
     def toggleFullScreen(self):
         # Переключение в полноэкранный режим
         if self.isFullScreen():
@@ -305,7 +315,7 @@ class Videoplayer(QMainWindow):
         else:
             self.windowStateBeforeFullScreen = self.windowState()
             self.showFullScreen()
-
+ 
     def keyPressEvent(self, event):
         # Обработка нажатий клавиш
         if event.key() == Qt.Key_F:
@@ -316,27 +326,29 @@ class Videoplayer(QMainWindow):
             self.backward()
         elif event.key() == Qt.Key_Right:
             self.forward()
+        elif event.key() == Qt.Key_Shift:
+            self.createScreenshot()
         else:
             super().keyPressEvent(event)
-
+ 
     def mouseDoubleClickEvent(self, event: QMouseEvent):
         # Обработка двойного щелчка мыши
         if event.button() == Qt.LeftButton:
             self.toggleFullScreen()
         else:
             super().mouseDoubleClickEvent(event)
-
+ 
     def changePlaybackSpeed(self):
         # Изменение скорости воспроизведения
         speedText = self.speedComboBox.currentText()
         speed = float(speedText[:-1])
         self.mediaPlayer.setPlaybackRate(speed)
-
+ 
     def backward(self):
         # Вернуться назад в видео
         position = self.mediaPlayer.position()
         self.mediaPlayer.setPosition(position - 10000)
-
+ 
     def forward(self):
         # Перейти вперед в видео
         position = self.mediaPlayer.position()
@@ -345,12 +357,12 @@ class Videoplayer(QMainWindow):
         if new_position > duration:
             new_position = duration
         self.mediaPlayer.setPosition(new_position)
-
+ 
     def detectionError(self):
         # Обработка ошибки воспроизведения
         self.playButton.setEnabled(False)
         self.errorLabel.setText("Ошибка: " + self.mediaPlayer.errorString())
-
+ 
     def wheelEvent(self, event):
         # обработка колесика мыши для регулировки громкости 
         volume = self.volumeSlider.value()
@@ -364,12 +376,23 @@ class Videoplayer(QMainWindow):
             if volume > 0:
                 volume -= 5
                 self.volumeSlider.setValue(volume)
-
+ 
+    def createScreenshot(self):
+    # Создание скриншота из видео
+        fileName, _ = QFileDialog.getSaveFileName(self, "Выберите файл для сохранения скриншота", "", "Изображение (*.png)")
+        if fileName:
+            videoWidget = self.mediaPlayer.videoOutput()
+            pixmap = QPixmap(videoWidget.size())
+            painter = QPainter(pixmap)
+            videoWidget.render(painter)
+            painter.end()
+            pixmap.save(fileName, "png")
+ 
 if __name__ == '__main__':
     # Создание и запуск приложения
     app = QApplication(sys.argv)
     app.setApplicationName("Видеоплеер")
-    apply_stylesheet(app, theme='light_cyan.xml')
-    window = Videoplayer()
-    window.show()
+    apply_stylesheet(app, theme='light_teal.xml')
+    player = Videoplayer()
+    player.show()
     sys.exit(app.exec_())
