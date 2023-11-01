@@ -4,8 +4,10 @@ from qt_material import apply_stylesheet
 from PyQt5.QtMultimedia import QMediaContent, QMediaPlayer
 from PyQt5.QtMultimediaWidgets import QVideoWidget
 from PyQt5.QtWidgets import QApplication, QFileDialog, QMainWindow, QHBoxLayout, QLabel, QPushButton, QSizePolicy, QSlider, QStyle, QVBoxLayout, QWidget, QAction, QComboBox
-from PyQt5.QtGui import QIcon, QMouseEvent, QPixmap
+from PyQt5.QtGui import QIcon, QMouseEvent, QPixmap, QPainter
 import sys, os
+from PyQt5.QtGui import QImage, QPixmap, QPainter
+from PyQt5.QtCore import QTimer
  
 # Класс MainWindow для видеоплеера
 class Videoplayer(QMainWindow):
@@ -81,6 +83,37 @@ class Videoplayer(QMainWindow):
         self.screenshotButton.clicked.connect(self.createScreenshot)
         self.errorLabel = QLabel()
         self.errorLabel.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Maximum)
+        self.brightnessSlider = QSlider(Qt.Horizontal)
+        self.brightnessSlider.setRange(-100, 100)
+        self.brightnessSlider.setValue(0)
+        self.brightnessSlider.valueChanged.connect(self.changeBrightness)
+        controlLayout.addWidget(self.brightnessSlider)
+
+
+        self.brightnessSlider = QSlider(Qt.Horizontal)
+        self.brightnessSlider.setRange(-100, 100)
+        self.brightnessSlider.setValue(0)
+        self.brightnessSlider.valueChanged.connect(self.changeBrightness)
+
+        # ...
+
+        self.controlLayout = QHBoxLayout()
+        self.controlLayout.setContentsMargins(0, 0, 0, 0)
+        self.controlLayout.addWidget(self.playButton)
+        self.controlLayout.addWidget(self.stopbutton)
+        self.controlLayout.addWidget(self.pausebutton)
+        self.controlLayout.addWidget(self.currentTimeLabel)
+        self.controlLayout.addWidget(self.timeSeparatorLabel)
+        self.controlLayout.addWidget(self.totalTimeLabel)
+        self.controlLayout.addWidget(self.positionSlider)
+        self.controlLayout.addWidget(self.volumeImageLabel)
+        self.controlLayout.addWidget(self.volumeSlider)
+        self.controlLayout.addWidget(self.brightnessSlider)  # Добавляем сюда слайдер яркости
+        self.controlLayout.addWidget(self.fullscreenButton)
+        self.controlLayout.addWidget(self.speedComboBox)
+        self.controlLayout.addWidget(self.backwardButton)
+        self.controlLayout.addWidget(self.forwardButton)
+        self.controlLayout.addWidget(self.screenshotButton)
  
         # создание "горячих" клавиш 
         openAction = QAction(QIcon('icons/open_file.png'), 'Открыть файл', self)
@@ -378,15 +411,28 @@ class Videoplayer(QMainWindow):
                 self.volumeSlider.setValue(volume)
  
     def createScreenshot(self):
-    # Создание скриншота из видео
+        # Создание скриншота из видео
         fileName, _ = QFileDialog.getSaveFileName(self, "Выберите файл для сохранения скриншота", "", "Изображение (*.png)")
         if fileName:
-            videoWidget = self.mediaPlayer.videoOutput()
-            pixmap = QPixmap(videoWidget.size())
-            painter = QPainter(pixmap)
-            videoWidget.render(painter)
-            painter.end()
-            pixmap.save(fileName, "png")
+            videoWidget = self.centralWidget().findChild(QVideoWidget)
+            if videoWidget:
+                # Добавим небольшую задержку перед созданием скриншота
+                QTimer.singleShot(100, lambda: self.captureScreenshot(videoWidget, fileName))
+
+    def captureScreenshot(self, videoWidget, fileName):
+        pixmap = QPixmap(videoWidget.size())
+        painter = QPainter(pixmap)
+        videoWidget.render(painter)
+        painter.end()
+        pixmap.save(fileName, "png")
+    
+    def changeBrightness(self, brightness):
+        # Изменение яркости видео
+        videoWidget = self.centralWidget().findChild(QVideoWidget)
+        if videoWidget:
+            videoWidget.setBrightness(brightness)
+
+			
  
 if __name__ == '__main__':
     # Создание и запуск приложения
