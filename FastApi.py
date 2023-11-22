@@ -23,5 +23,5 @@ def leave_feedback(feedback: Feedback):
     if "я молодец" in feedback_text.lower():
         raise HTTPException(status_code=400, detail="Запрещено использовать фразу 'я молодец'.")
  
-    return {"message": "Спасибо за комментарий!", "feedback": "Спасибо за комментарий!", "status": "ok"}
+    return {"message": "Спасибо за коммеfнтарий!", "feedback": "Спасибо за комментарий!", "status": "ok"}
  
